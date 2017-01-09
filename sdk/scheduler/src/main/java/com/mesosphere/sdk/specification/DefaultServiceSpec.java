@@ -217,6 +217,8 @@ public class DefaultServiceSpec implements ServiceSpec {
                 AndRule.class,
                 AnyMatcher.class,
                 AttributeRule.class,
+                DefaultResourceSpec.class,
+                DefaultUriSpec.class,
                 ExactMatcher.class,
                 HostnameRule.class,
                 MaxPerAttributeRule.class,
