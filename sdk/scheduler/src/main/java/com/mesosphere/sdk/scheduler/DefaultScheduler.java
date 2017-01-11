@@ -726,8 +726,6 @@ public class DefaultScheduler implements Scheduler, Observer {
                 try {
                     stateStore.storeStatus(status);
                     planCoordinator.getPlanManagers().stream()
-                            //TODO: why do you ignore waiting plan here?
-                            .filter(planManager -> !planManager.getPlan().isWaiting())
                             .forEach(planManager -> planManager.update(status));
                     reconciler.update(status);
 

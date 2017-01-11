@@ -140,7 +140,7 @@ public class DefaultStep extends DefaultObservable implements Step {
     public Status getStatus() {
         synchronized (statusLock) {
             if (getStrategy().isInterrupted() &&
-                    (status == Status.PENDING || status == status.PREPARED)) {
+                    (status == Status.PENDING || status == Status.PREPARED)) {
                 return Status.WAITING;
             }
             return status;
