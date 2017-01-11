@@ -49,6 +49,12 @@ public enum Status {
     /**
      * Execution has completed.
      */
-    COMPLETE
+    COMPLETE,
 
+
+    /**
+     * return value: only returned by Phase and Plan getStatus, to state that at lease one child is complete and at
+     * least one child is in progress (either PENDING or prepared PREPARED).
+     */
+    IN_PROGRESS
 }

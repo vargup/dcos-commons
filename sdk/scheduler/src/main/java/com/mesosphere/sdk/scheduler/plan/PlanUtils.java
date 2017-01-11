@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.mesosphere.sdk.offer.Constants.DEPLOY_PLAN_NAME;
@@ -37,17 +35,6 @@ public class PlanUtils {
                 .collect(Collectors.toList());
 
         return candidateSteps;
-    }
-
-    public static Set<String> getDirtyAssets(Plan plan) {
-        if (plan == null) {
-            return Collections.emptySet();
-        }
-        return plan.getChildren().stream()
-                .flatMap(phase -> phase.getChildren().stream())
-                .filter(step -> step.isInProgress())
-                .map(step -> step.getName())
-                .collect(Collectors.toSet());
     }
 
     @SuppressWarnings("rawtypes")
@@ -87,7 +74,7 @@ public class PlanUtils {
      * @param parent The parent element whose children will be scanned
      * @return a combined list of all errors from the parent and all its children
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public static final List<String> getErrors(List<String> parentErrors, Element<? extends Element> parent) {
         // Note that this function MUST NOT call parent.getErrors() as that creates a circular call.
         List<String> errors = new ArrayList<>(); // copy list to avoid modifying parentErrors in-place
@@ -121,25 +108,31 @@ public class PlanUtils {
         } else if (CollectionUtils.isEmpty(children)) {
             result = Status.COMPLETE;
             LOGGER.debug("({} status={}) Empty collection of elements encountered.", parent.getName(), result);
-        } else if (anyHaveStatus(Status.PREPARED, children)) {
-            result = Status.PREPARED;
-            LOGGER.debug("({} status={}) At least one phase has status: {}",
-                    parent.getName(), result, Status.PREPARED);
-        } else if (anyHaveStatus(Status.WAITING, children)) {
-            result = Status.WAITING;
-            LOGGER.debug("({} status={}) At least one element has status: {}",
-                    parent.getName(), result, Status.WAITING);
         } else if (allHaveStatus(Status.COMPLETE, children)) {
             result = Status.COMPLETE;
             LOGGER.debug("({} status={}) All elements have status: {}",
                     parent.getName(), result, Status.COMPLETE);
+        } else if (anyHaveStatus(Status.WAITING, children)) {
+            result = Status.WAITING;
+            LOGGER.debug("({} status={}) At least one element has status: {}",
+                    parent.getName(), result, Status.WAITING);
+        } else if (parent.getStrategy().isInterrupted()) {
+            result = Status.WAITING;
+            LOGGER.info("({} status={}) Parent element has interrupted strategy", parent.getName(), result);
         } else if (allHaveStatus(Status.PENDING, children)) {
             result = Status.PENDING;
             LOGGER.debug("({} status={}) All elements have status: {}",
                     parent.getName(), result, Status.PENDING);
-        } else if (anyHaveStatus(Status.COMPLETE, children)
-                && anyHaveStatus(Status.PENDING, children)) {
-            result = Status.PREPARED;
+        } else if (anyHaveStatus(Status.PREPARED, children)) {
+            result = Status.IN_PROGRESS;
+            LOGGER.debug("({} status={}) At least one phase has status: {}",
+                    parent.getName(), result, Status.PREPARED);
+        } else if (anyHaveStatus(Status.IN_PROGRESS, children)) {
+            result = Status.IN_PROGRESS;
+            LOGGER.debug("({} status={}) At least one phase has status: {}",
+                    parent.getName(), result, Status.IN_PROGRESS);
+        } else if (anyHaveStatus(Status.COMPLETE, children) && (anyHaveStatus(Status.PENDING, children))) {
+            result = Status.IN_PROGRESS;
             LOGGER.debug("({} status={}) At least one element has status '{}' and one has status '{}'",
                     parent.getName(), result, Status.COMPLETE, Status.PENDING);
         } else if (anyHaveStatus(Status.STARTING, children)) {

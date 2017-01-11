@@ -59,7 +59,7 @@ public class DefaultPlanManagerTest {
         Assert.assertEquals(Status.PENDING, firstPhase.getStatus());
 
         firstStep.setStatus(Status.PREPARED);
-        Assert.assertEquals(Status.PREPARED, firstPhase.getStatus());
+        Assert.assertEquals(Status.IN_PROGRESS, firstPhase.getStatus());
 
         firstStep.setStatus(Status.COMPLETE);
         Assert.assertEquals(Status.COMPLETE, firstPhase.getStatus());
@@ -83,10 +83,10 @@ public class DefaultPlanManagerTest {
         Assert.assertEquals(Status.WAITING, planManager.getPlan().getStatus());
 
         firstStep.setStatus(Status.PREPARED);
-        Assert.assertEquals(Status.PREPARED, planManager.getPlan().getStatus());
+        Assert.assertEquals(Status.IN_PROGRESS, planManager.getPlan().getStatus());
 
         completePhase((Phase) plan.getChildren().get(0));
-        Assert.assertEquals(Status.PREPARED, planManager.getPlan().getStatus());
+        Assert.assertEquals(Status.IN_PROGRESS, planManager.getPlan().getStatus());
 
         completePhase((Phase) plan.getChildren().get(1));
         Assert.assertEquals(Status.COMPLETE, planManager.getPlan().getStatus());
@@ -113,7 +113,9 @@ public class DefaultPlanManagerTest {
         Assert.assertTrue(reconciliationStep.isPrepared());
 
         PlanManager manager = new DefaultPlanManager(inProgressPlan);
-        Assert.assertEquals(Status.PREPARED, manager.getPlan().getStatus());
+
+        manager.getPlan().getStrategy().proceed();
+        Assert.assertEquals(Status.IN_PROGRESS, manager.getPlan().getStatus());
     }
 
     @Test
@@ -228,7 +230,8 @@ public class DefaultPlanManagerTest {
         step2.setStatus(Status.PREPARED);
 
         PlanManager waitingManager = new DefaultPlanManager(waitingPlan);
-        Assert.assertEquals(Status.PREPARED, waitingManager.getPlan().getStatus());
+        waitingManager.getPlan().getStrategy().proceed();
+        Assert.assertEquals(Status.IN_PROGRESS, waitingManager.getPlan().getStatus());
 
         final Set<String> dirtyAssets = waitingManager.getDirtyAssets();
         Assert.assertEquals(2, dirtyAssets.size());
@@ -258,7 +261,9 @@ public class DefaultPlanManagerTest {
         step2.setStatus(Status.PREPARED);
 
         PlanManager waitingManager = new DefaultPlanManager(waitingPlan);
-        Assert.assertEquals(Status.PREPARED, waitingManager.getPlan().getStatus());
+
+        waitingManager.getPlan().getStrategy().proceed();
+        Assert.assertEquals(Status.IN_PROGRESS, waitingManager.getPlan().getStatus());
 
         final Set<String> dirtyAssets = waitingManager.getDirtyAssets();
         Assert.assertEquals(1, dirtyAssets.size());
@@ -287,11 +292,15 @@ public class DefaultPlanManagerTest {
         step2.setStatus(Status.PREPARED);
 
         PlanManager waitingManager = new DefaultPlanManager(waitingPlan);
-        Assert.assertEquals(Status.PREPARED, waitingManager.getPlan().getStatus());
+        Assert.assertFalse(phase.getStrategy().isInterrupted());
+        Assert.assertEquals(Status.WAITING, waitingManager.getPlan().getStatus());
 
         final Set<String> dirtyAssets = waitingManager.getDirtyAssets();
         Assert.assertEquals(1, dirtyAssets.size());
         Assert.assertTrue(dirtyAssets.contains("test-step-2"));
+
+        waitingManager.getPlan().getStrategy().proceed();
+        Assert.assertEquals(Status.IN_PROGRESS, waitingManager.getPlan().getStatus());
     }
 
     private static void completePhase(Phase phase) {

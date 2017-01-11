@@ -101,7 +101,7 @@ public class DefaultStep extends DefaultObservable implements Step {
 
     @Override
     public boolean isAssetDirty() {
-        return isInProgress();
+        return isPrepared() || isStarting();
     }
 
     @Override
@@ -139,7 +139,8 @@ public class DefaultStep extends DefaultObservable implements Step {
     @Override
     public Status getStatus() {
         synchronized (statusLock) {
-            if (status == Status.PENDING && getStrategy().isInterrupted()) {
+            if (getStrategy().isInterrupted() &&
+                    (status == Status.PENDING || status == status.PREPARED)) {
                 return Status.WAITING;
             }
             return status;

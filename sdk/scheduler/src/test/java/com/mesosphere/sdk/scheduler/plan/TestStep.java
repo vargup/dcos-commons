@@ -57,7 +57,7 @@ public class TestStep extends DefaultObservable implements Step {
 
     @Override
     public boolean isAssetDirty() {
-        return isInProgress();
+        return isPrepared() || isStarting();
     }
 
     @Override
